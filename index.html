@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vault">
+
+<style>
+  :root { 
+    --bg: #000; 
+    --glass: rgba(35, 35, 35, 0.75); 
+    --border: rgba(255, 255, 255, 0.12);
+    --glow-🦂: #f4c430; --glow-👹: #e30022; --glow-👁️: #ffffff; --glow-🧠: #ff69b4; --glow-❗️: #ff4500;
+  }
+  
+  body { 
+    font-family: -apple-system, system-ui; 
+    background: var(--bg); 
+    color: #fff; 
+    margin: 0; 
+    padding: 0; 
+    height: 100dvh; /* Dynamic height for mobile browsers */
+    overflow: hidden; 
+    overscroll-behavior: none; /* Prevents bounce */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .iphone-container { 
+    height: 100%; 
+    display: flex; 
+    flex-direction: column;
+    padding: calc(env(safe-area-inset-top) + 20px) 20px env(safe-area-inset-bottom) 20px; 
+    box-sizing: border-box; 
+    position: relative;
+  }
+  
+  .tabs { display: flex; margin-bottom: 15px; z-index: 100; position: relative; }
+  .tab-btn { flex: 1; padding: 10px; background: none; color: #444; border: none; font-size: 10px; letter-spacing: 4px; text-transform: uppercase; transition: 0.4s; font-weight: bold; }
+  .tab-active { color: #fff; text-shadow: 0 0 15px #fff; transform: scale(1.1); }
+  
+  .content-section { 
+    position: absolute; 
+    top: calc(env(safe-area-inset-top) + 75px); 
+    width: calc(100% - 40px); 
+    bottom: env(safe-area-inset-bottom);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+    display: flex; 
+    flex-direction: column;
+  }
+  .section-hidden { transform: scale(0.92); opacity: 0; pointer-events: none; }
+  .section-visible { transform: scale(1); opacity: 1; }
+
+  .input-wrapper { position: relative; flex: 1; display: flex; flex-direction: column; }
+  textarea { 
+    flex: 1; background: var(--glass); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+    border: 1px solid var(--border); color: #fff; border-radius: 24px; padding: 20px; padding-bottom: 60px; font-size: 18px; outline: none; 
+    resize: none; font-family: inherit; transition: 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  .add-photo-btn { 
+    position: absolute; bottom: 75px; right: 15px;
+    background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: #fff; 
+    width: 40px; height: 40px; border-radius: 12px; font-size: 22px; 
+    display: flex; align-items: center; justify-content: center; z-index: 5;
+  }
+  
+  #photoPreview { width: 100%; max-height: 120px; object-fit: cover; border-radius: 12px; margin-bottom: 10px; display: none; border: 1px solid var(--border); }
+
+  .emoji-picker { display: flex; justify-content: space-between; margin: 15px 0; }
+  .emoji-btn { 
+    font-size: 22px; background: rgba(255,255,255,0.08); border-radius: 50%; 
+    width: 48px; height: 48px; filter: grayscale(50%); transition: 0.3s; 
+    display: flex; align-items: center; justify-content: center; 
+    opacity: 0.7; border: 1px solid rgba(255,255,255,0.05); 
+  }
+  .emoji-btn.active { filter: grayscale(0%); border-color: currentColor; opacity: 1; box-shadow: 0 0 20px currentColor; transform: scale(1.15); }
+
+  .main-btn { background: #fff; color: #000; border: none; padding: 18px; border-radius: 18px; font-weight: 900; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 25px; cursor: pointer; }
+  
+  #vaultList { 
+    overflow-y: auto; 
+    flex-grow: 1; 
+    padding-bottom: 40px; 
+    -webkit-overflow-scrolling: touch; /* Momentum scrolling */
+  }
+  .vault-item { background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 18px; margin-bottom: 15px; border-radius: 20px; position: relative; }
+  .v-img { width: 100%; border-radius: 12px; margin-top: 10px; display: block; }
+  .v-date { font-size: 9px; color: #666; letter-spacing: 1px; font-weight: bold; }
+  .v-icon { position: absolute; right: 15px; top: 15px; font-size: 18px; }
+  .action-bar { display: flex; gap: 20px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; font-size: 10px; font-weight: bold; }
+  .bold-text { font-weight: 800; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="iphone-container">
+  <div class="tabs">
+    <button id="writeTab" class="tab-btn tab-active" onclick="showTab('write')">Capture</button>
+    <button id="vaultTab" class="tab-btn" onclick="showTab('vault')">Vault</button>
+  </div>
+
+  <div id="writeSection" class="content-section section-visible">
+    <div class="input-wrapper">
+      <img id="photoPreview">
+      <textarea id="thoughtInput" placeholder="Speak..."></textarea>
+      <button class="add-photo-btn" onclick="document.getElementById('fileInput').click()">+</button>
+      <input type="file" id="fileInput" hidden accept="image/*" onchange="handleImage(this)">
+    </div>
+    
+    <div class="emoji-picker" id="capturePicker">
+      <button class="emoji-btn" style="color:var(--glow-🦂)" onclick="selectEmoji('🦂', this, 'var(--glow-🦂)')">🦂</button>
+      <button class="emoji-btn" style="color:var(--glow-👹)" onclick="selectEmoji('👹', this, 'var(--glow-👹)')">👹</button>
+      <button class="emoji-btn" style="color:var(--glow-👁️)" onclick="selectEmoji('👁️', this, 'var(--glow-👁️)')">👁️</button>
+      <button class="emoji-btn" style="color:var(--glow-🧠)" onclick="selectEmoji('🧠', this, 'var(--glow-🧠)')">🧠</button>
+      <button class="emoji-btn" style="color:var(--glow-❗️)" onclick="selectEmoji('❗️', this, 'var(--glow-❗️)')">❗️</button>
+    </div>
+    
+    <button class="main-btn" id="commitBtn" onclick="saveThought()">Commit</button>
+  </div>
+
+  <div id="vaultSection" class="content-section section-hidden">
+    <div class="emoji-picker" style="margin-bottom: 10px;">
+      <button class="emoji-btn" onclick="filterVault('🦂', this)" style="color:var(--glow-🦂)">🦂</button>
+      <button class="emoji-btn" onclick="filterVault('👹', this)" style="color:var(--glow-👹)">👹</button>
+      <button class="emoji-btn" onclick="filterVault('👁️', this)" style="color:var(--glow-👁️)">👁️</button>
+      <button class="emoji-btn" onclick="filterVault('🧠', this)" style="color:var(--glow-🧠)">🧠</button>
+      <button class="emoji-btn" onclick="filterVault('❗️', this)" style="color:var(--glow-❗️)">❗️</button>
+      <button class="emoji-btn active" onclick="filterVault('', this)" style="font-size:10px; color:#aaa;">ALL</button>
+    </div>
+    <input type="text" id="searchBar" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); padding:15px; color:#fff; border-radius:14px; margin-bottom:15px; outline:none;" placeholder="Search..." oninput="renderVault()">
+    <div id="vaultList"></div>
+  </div>
+</div>
+
+<script>
+  let selectedEmoji = '';
+  let currentFilter = '';
+  let editingId = null;
+  let currentImageData = '';
+  let allThoughts = JSON.parse(localStorage.getItem('myThoughtVault')) || [];
+
+  function haptic(pattern) { if (window.navigator.vibrate) window.navigator.vibrate(pattern); }
+
+  function handleImage(input) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      currentImageData = e.target.result;
+      const prev = document.getElementById('photoPreview');
+      prev.src = currentImageData;
+      prev.style.display = 'block';
+      haptic(10);
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+
+  function selectEmoji(e, b, color) { 
+    selectedEmoji = e; 
+    document.querySelectorAll('#capturePicker .emoji-btn').forEach(x => x.classList.remove('active')); 
+    b.classList.add('active'); 
+    const box = document.getElementById('thoughtInput');
+    box.style.borderColor = color;
+    box.style.boxShadow = `inset 0 0 15px ${color}11, 0 0 20px ${color}22`;
+    haptic(15);
+  }
+
+  function showTab(t) {
+    document.getElementById('writeSection').className = `content-section ${t==='write'?'section-visible':'section-hidden'}`;
+    document.getElementById('vaultSection').className = `content-section ${t==='vault'?'section-visible':'section-hidden'}`;
+    document.getElementById('writeTab').classList.toggle('tab-active', t === 'write');
+    document.getElementById('vaultTab').classList.toggle('tab-active', t === 'vault');
+    haptic(10);
+    if (t === 'vault') renderVault();
+  }
+
+  function formatText(text) {
+    return text.replace(/\*(.*?)\*/g, '<span class="bold-text">$1</span>');
+  }
+
+  function saveThought() {
+    const t = document.getElementById('thoughtInput').value;
+    if (!t && !currentImageData) return; // Allow image-only or text-only
+    if (!selectedEmoji) { alert("Select a Category Emoji"); return; }
+
+    const entry = { text: t, emoji: selectedEmoji, image: currentImageData, id: editingId || Date.now() };
+    if (editingId) {
+      allThoughts = allThoughts.map(item => item.id === editingId ? entry : item);
+      editingId = null;
+      document.getElementById('commitBtn').innerText = "Commit";
+    } else {
+      allThoughts.push(entry);
+    }
+    localStorage.setItem('myThoughtVault', JSON.stringify(allThoughts));
+    
+    haptic([20, 30, 20]);
+    
+    // Clear Input
+    currentImageData = '';
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('thoughtInput').value = '';
+    document.getElementById('thoughtInput').style.borderColor = 'var(--border)';
+    document.getElementById('thoughtInput').style.boxShadow = 'none';
+    document.querySelectorAll('#capturePicker .emoji-btn').forEach(x => x.classList.remove('active'));
+    showTab('vault');
+  }
+
+  function renderVault() {
+    const l = document.getElementById('vaultList'); 
+    const q = document.getElementById('searchBar').value.toLowerCase();
+    l.innerHTML = '';
+    [...allThoughts].reverse().forEach(t => {
+      if ((currentFilter === '' || t.emoji === currentFilter) && t.text.toLowerCase().includes(q)) {
+        const dateStr = new Date(t.id).toLocaleDateString([], { 
+            weekday: 'short', month: 'short', day: 'numeric' 
+        }).toUpperCase();
+        
+        l.innerHTML += `
+          <div class="vault-item">
+            <span class="v-date">${dateStr}</span>
+            <span class="v-icon">${t.emoji}</span>
+            ${t.image ? `<img src="${t.image}" class="v-img">` : ''}
+            <div style="color:#ddd; line-height:1.6; margin-top:10px; font-size:16px;">${formatText(t.text)}</div>
+            <div class="action-bar">
+              <div onclick="editEntry(${t.id})" style="color: #888;">EDIT</div>
+              <div onclick="deleteEntry(${t.id})" style="color: #600;">PURGE</div>
+            </div>
+          </div>`;
+      }
+    });
+  }
+
+  function editEntry(id) {
+    haptic(10);
+    const entry = allThoughts.find(x => x.id === id);
+    editingId = id;
+    document.getElementById('thoughtInput').value = entry.text;
+    document.getElementById('commitBtn').innerText = "Update";
+    if (entry.image) {
+      currentImageData = entry.image;
+      const prev = document.getElementById('photoPreview');
+      prev.src = currentImageData;
+      prev.style.display = 'block';
+    }
+    const btns = document.querySelectorAll('#capturePicker .emoji-btn');
+    btns.forEach(b => { if (b.innerText === entry.emoji) selectEmoji(entry.emoji, b, b.style.color); });
+    showTab('write');
+  }
+
+  function deleteEntry(id) { 
+    haptic([30, 50]);
+    const btn = event.target;
+    
+    if (btn.innerText === "PURGE") {
+      btn.innerText = "SURE?";
+      btn.style.color = "#ff4500";
+      setTimeout(() => { 
+        btn.innerText = "PURGE"; 
+        btn.style.color = "#600";
+      }, 3000);
+    } else {
+      allThoughts = allThoughts.filter(x => x.id !== id); 
+      localStorage.setItem('myThoughtVault', JSON.stringify(allThoughts)); 
+      haptic(10);
+      renderVault(); 
+    }
+  }
+  
+  function filterVault(e, b) { 
+    currentFilter = e; 
+    document.querySelectorAll('#vaultSection .emoji-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    haptic(10);
+    renderVault(); 
+  }
+</script>
+</body>
+</html>
